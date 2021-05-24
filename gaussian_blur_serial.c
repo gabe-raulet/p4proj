@@ -9,8 +9,13 @@
 
 #define GAUSSIAN_NORMALIZER (0.15915494309189535)
 
+#define min(a, b) (((a) < (b)) ? (a) : (b))
+#define max(a, b) (((a) > (b)) ? (a) : (b))
+
 static float sigma;
-static int order;
+static float ss;
+static int kernel_order;
+static int kernel_offset;
 static int nrows;
 static int ncols;
 static int max_pixel;
@@ -18,14 +23,7 @@ static uint8_t *vals;
 static uint8_t *blur;
 static float *kernel_matrix;
 
-float gauss(float x, float y, float sigma)
-{
-    float ss = sigma*sigma;
-    return (GAUSSIAN_NORMALIZER/(ss))*exp(-(x*x + y*y)/(2*ss));
-}
-
-void pgm_image_read(const char *filename);
-void pgm_image_write(const char *filename);
+float gauss(float x, float y);
 
 int main(int argc, char *argv[])
 {
@@ -34,47 +32,20 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    pgm_image_read(argv[1]);
     sigma = atof(argv[3]);
+    ss = sigma * sigma;
+    kernel_order = ceil(6*sigma);
+    if (kernel_order % 2 == 0) kernel_order++;
+    kernel_offset = kernel_order / 2;
 
-    order = ceil(6*sigma);
-    if (order % 2 == 0) order++;
-
-    kernel_matrix = malloc(order * order);
-
-    int offset = order / 2;
-    for (int i = 0; i < order; ++i)
-        for (int j = 0; j < order; ++j)
-            kernel_matrix[i*order + j] = gauss(i-offset, j-offset, sigma);
-
-    blur = calloc(1, nrows * ncols);
-
-    for (int i = 0; i < nrows; ++i) {
-        for (int j = 0; j < ncols; ++j) {
-            float val = 0;
-            for (int x = 0; x < order; ++x) {
-                for (int y = 0; y < order; ++y) {
-                    val += (kernel_matrix[x*order + y]*vals[(i+x-offset)*ncols + (j+y-offset)]);
-                }
-                blur[i*ncols + j] = ((uint8_t)val);
-            }
-        }
-    }
-
-    pgm_image_write(argv[2]);
-    return 0;
-}
-
-void pgm_image_read(const char *filename)
-{
     char header[128], n1[32], n2[32];
-    FILE *fp = fopen(filename, "rb");
+    FILE *fp = fopen(argv[1], "rb");
     fgets(header, 128, fp);
     char *eol = strchr(header, '\n');
     *eol = '\0';
 
     if (strcmp(header, "P5")) {
-        fprintf(stderr, "'%s' must be in P5 format\n", filename);
+        fprintf(stderr, "'%s' must be in P5 format\n", argv[1]);
         fclose(fp);
         exit(1);
     }
@@ -99,13 +70,44 @@ void pgm_image_read(const char *filename)
     vals = malloc(nrows * ncols);
     fread(vals, 1, nrows * ncols, fp);
     fclose(fp);
+
+    kernel_matrix = malloc(sizeof(float)*kernel_order*kernel_order);
+
+    for (int i = 0; i < kernel_order; ++i)
+        for (int j = 0; j < kernel_order; ++j)
+            kernel_matrix[i*kernel_order + j] = gauss(i-kernel_offset, j-kernel_offset);
+
+    /* start convolution */
+    blur = malloc(nrows * ncols);
+
+    int xv, yv;
+    for (int i = 0; i < nrows; ++i) {
+        for (int j = 0; j < ncols; ++j) {
+            double val = 0;
+            for (int x = 0; x < kernel_order; ++x) {
+                for (int y = 0; y < kernel_order; ++y) {
+                    if (i+x-kernel_offset < 0) xv = 0;
+                    else if (i+x-kernel_offset >= ncols) xv = ncols - 1;
+                    else xv = i+x-kernel_offset;
+                    if (j+y-kernel_offset < 0) yv = 0;
+                    else if (j+y-kernel_offset >= nrows) yv = nrows - 1;
+                    else yv = j+y-kernel_offset;
+                    val += (vals[xv*ncols + yv]+0.) * kernel_matrix[x*kernel_order + y];
+                }
+            }
+            blur[i*ncols + j] = roundf(val);
+        }
+    }
+    /* end convolution */
+
+    FILE *fp2 = fopen(argv[2], "wb");
+    fprintf(fp2, "P5\n%d %d\n%d\n", nrows, ncols, max_pixel);
+    fwrite(blur, 1, nrows * ncols, fp2);
+    fclose(fp2);
+    return 0;
 }
 
-void pgm_image_write(const char *filename)
+float gauss(float x, float y)
 {
-    FILE *fp = fopen(filename, "wb");
-    fprintf(fp, "P5\n%d %d\n%d\n", nrows, ncols, max_pixel);
-    fwrite(blur, 1, nrows * ncols, fp);
-    fclose(fp);
-
+    return GAUSSIAN_NORMALIZER*exp(-(x*x + y*y)/(2*ss))/ss;
 }
