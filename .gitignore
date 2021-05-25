@@ -1,2 +1,9 @@
 p4/
 *.tar.gz
+*.pgm
+*.swp
+a.out
+gaussian_blur_serial
+*.dSYM
+1__cuda_code_export
+city
