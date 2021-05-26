@@ -77,14 +77,18 @@ int main(int argc, char *argv[])
     /* start convolution */
     blur = malloc(nrows * ncols);
 
+    #define vidx(rr, r, R) (((rr) + (r) < 0) ? 0 : (((rr) + (r) >= (R)) ? (R) - 1 : (rr) + (r)))
+
     int xv, yv;
     for (int ii = 0; ii < nrows; ++ii) {
         for (int jj = 0; jj < ncols; ++jj) {
             float val = 0;
             for (int i = -k; i <= k; ++i) {
-                xv = (ii + i < 0) ? 0 : ((ii + i >= nrows) ? nrows - 1 : ii + i);
+                /* xv = (ii + i < 0) ? 0 : ((ii + i >= nrows) ? nrows - 1 : ii + i); */
+                xv = vidx(ii, i, nrows);
                 for (int j = -k; j <= k; ++j) {
-                    yv = (jj + j < 0) ? 0 : ((jj + j >= ncols) ? ncols - 1 : jj + j);
+                    /* yv = (jj + j < 0) ? 0 : ((jj + j >= ncols) ? ncols - 1 : jj + j); */
+                    yv = vidx(jj, j, ncols);
                     val += H[i+k][j+k]*vals[xv*ncols + yv];
                 }
             }
