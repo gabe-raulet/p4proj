@@ -91,7 +91,7 @@ void blur_kernel(float *H, uint8_t *vals, uint8_t *blur, int N, int k, int nrows
         xv = vidx(ii, i, nrows);
         for (j = -k; j <= k; ++j) {
             yv = vidx(jj, j, ncols);
-            val += H[(i+k)*N + (j+k)]k*vals[xv*ncols + yv];
+            val += H[(i+k)*N + (j+k)]*vals[xv*ncols + yv];
         }
     }
 

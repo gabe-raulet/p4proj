@@ -9,18 +9,7 @@
 
 #define PI (3.14159265358979323)
 
-//static float sigma;
-//static float ss;
-//static int N;
-//static int k;
-//static int nrows;
-//static int ncols;
-//static int max_pixel;
-//static uint8_t *vals;
-//static uint8_t *blur;
-//static float *kernel_matrix;
-
-void blur_kernel(float *H, uint8_t *vals, uint8_t *blur, int N, int k, int nrows, int ncols);
+void blur_kernel(float *H, uint8_t *vals, uint8_t *blur, int N, int k, int nrows, int ncols, int ii, int jj);
 
 int main(int argc, char *argv[])
 {
@@ -54,9 +43,11 @@ int main(int argc, char *argv[])
     fgets(header, 128, fp1);
     eol = strchr(header, '\n');
     *eol = '\0';
-    char *hp = header;
-    for (; *hp != ' '; ++hp);
-    *hp = '\0';
+
+    /* char *hp = header; */
+    /* for (; *hp != ' '; ++hp); */
+    /* *hp = '\0'; */
+    char *hp = strchr(header, ' ');
 
     strcpy(n1, header);
     strcpy(n2, hp + 1);
@@ -78,7 +69,10 @@ int main(int argc, char *argv[])
             H[i*N + j] = exp(-(x*x + y*y)/(2.*ss))/(2.*PI*ss);
 
     blur = malloc(nrows * ncols);
-    blur_kernel(H, vals, blur, N, k, nrows, ncols);
+
+    for (int ii = 0; ii < nrows; ++ii)
+        for (int jj =0; jj < ncols; ++jj)
+            blur_kernel(H, vals, blur, N, k, nrows, ncols, ii, jj);
 
     FILE *fp2 = fopen(argv[2], "wb");
     fprintf(fp2, "P5\n%d %d\n%d\n", ncols, nrows, max_pixel);
@@ -89,22 +83,17 @@ int main(int argc, char *argv[])
 
 #define vidx(rr, r, R) (((rr) + (r) < 0) ? 0 : (((rr) + (r) >= (R)) ? (R) - 1 : (rr) + (r)))
 
-void blur_kernel(float *H, uint8_t *vals, uint8_t *blur, int N, int k, int nrows, int ncols)
+void blur_kernel(float *H, uint8_t *vals, uint8_t *blur, int N, int k, int nrows, int ncols, int ii, int jj)
 {
-    int xv, yv, ii, jj, i, j;
-    float val;
-    for (ii = 0; ii < nrows; ++ii) {
-        for (jj = 0; jj < ncols; ++jj) {
-            val = 0;
-            for (i = -k; i <= k; ++i) {
-                xv = vidx(ii, i, nrows);
-                for (j = -k; j <= k; ++j) {
-                    yv = vidx(jj, j, ncols);
-                    val += H[(i+k)*N + (j+k)]*vals[xv*ncols + yv];
-                }
-            }
-            blur[ii*ncols + jj] = val;
+    int xv, yv, i, j;
+    float val = 0;
+    for (i = -k; i <= k; ++i) {
+        xv = vidx(ii, i, nrows);
+        for (j = -k; j <= k; ++j) {
+            yv = vidx(jj, j, ncols);
+            val += H[(i+k)*N + (j+k)]*vals[xv*ncols + yv];
         }
     }
-}
 
+    blur[ii*ncols + jj] = val;
+}
