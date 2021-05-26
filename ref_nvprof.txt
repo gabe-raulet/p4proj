@@ -1,0 +1,20 @@
+==5540== NVPROF is profiling process 5540, command: ref_gaussian_blur_cuda ucd_pavilion_15mp.pgm output.pgm 10
+==5540== Profiling application: ref_gaussian_blur_cuda ucd_pavilion_15mp.pgm output.pgm 10
+==5540== Profiling result:
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+ GPU activities:   99.14%  836.62ms         1  836.62ms  836.62ms  836.62ms  cuda_gblur_kernel(unsigned char*, unsigned char*, int, int, float*, int)
+                    0.60%  5.0461ms         1  5.0461ms  5.0461ms  5.0461ms  [CUDA memcpy DtoH]
+                    0.26%  2.1857ms         2  1.0929ms  2.6240us  2.1831ms  [CUDA memcpy HtoD]
+      API calls:   87.56%  836.63ms         1  836.63ms  836.63ms  836.63ms  cudaDeviceSynchronize
+                   11.35%  108.48ms         3  36.160ms  96.028us  108.26ms  cudaMalloc
+                    0.82%  7.8380ms         3  2.6127ms  64.426us  5.4944ms  cudaMemcpy
+                    0.24%  2.3014ms         3  767.15us  82.934us  1.1155ms  cudaFree
+                    0.01%  96.889us        94  1.0300us      96ns  40.604us  cuDeviceGetAttribute
+                    0.01%  62.200us         1  62.200us  62.200us  62.200us  cuDeviceTotalMem
+                    0.00%  28.238us         1  28.238us  28.238us  28.238us  cudaLaunch
+                    0.00%  11.885us         1  11.885us  11.885us  11.885us  cuDeviceGetName
+                    0.00%  8.0500us         6  1.3410us     157ns  6.9110us  cudaSetupArgument
+                    0.00%  1.2080us         3     402ns     158ns     878ns  cuDeviceGetCount
+                    0.00%  1.0890us         1  1.0890us  1.0890us  1.0890us  cudaConfigureCall
+                    0.00%     482ns         2     241ns     120ns     362ns  cuDeviceGet
+                    0.00%     382ns         1     382ns     382ns     382ns  cudaPeekAtLastError

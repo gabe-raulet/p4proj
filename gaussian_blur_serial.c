@@ -44,9 +44,6 @@ int main(int argc, char *argv[])
     eol = strchr(header, '\n');
     *eol = '\0';
 
-    /* char *hp = header; */
-    /* for (; *hp != ' '; ++hp); */
-    /* *hp = '\0'; */
     char *hp = strchr(header, ' ');
 
     strcpy(n1, header);
