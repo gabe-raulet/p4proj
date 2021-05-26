@@ -1,5 +1,5 @@
 all: gaussian_blur_serial
 
 gaussian_blur_serial: gaussian_blur_serial.c
-	clang -g -o $@ $^
+	gcc -O2 -g -o $@ $^ -lm
 

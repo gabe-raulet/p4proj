@@ -57,8 +57,8 @@ int main(int argc, char *argv[])
     strcpy(n1, header);
     strcpy(n2, hp + 1);
 
-    nrows = atoi(n1);
-    ncols = atoi(n2);
+    ncols = atoi(n1);
+    nrows = atoi(n2);
 
     fgets(header, 128, fp);
     eol = strchr(header, '\n');
@@ -81,21 +81,21 @@ int main(int argc, char *argv[])
     for (int ii = 0; ii < nrows; ++ii) {
         for (int jj = 0; jj < ncols; ++jj) {
             float val = 0;
-            for (int i = 0; i < N; ++i) {
-                xv = (ii + i - k < 0) ? 0 : ((ii + i - k >= nrows) ? nrows - 1 : ii + i - k);
-                for (int j = 0; j < N; ++j) {
-                    yv = (jj + j - k < 0) ? 0 : ((jj + j - k >= ncols) ? ncols - 1 : jj + j - k);
-                    val += H[i][j]*vals[xv*ncols + yv];
+            for (int i = -k; i <= k; ++i) {
+                xv = (ii + i < 0) ? 0 : ((ii + i >= nrows) ? nrows - 1 : ii + i);
+                for (int j = -k; j <= k; ++j) {
+                    yv = (jj + j < 0) ? 0 : ((jj + j >= ncols) ? ncols - 1 : jj + j);
+                    val += H[i+k][j+k]*vals[xv*ncols + yv];
                 }
             }
-            blur[ii*ncols + jj] = val;
+            blur[ii*ncols + jj] = floor(val);
         }
     }
 
     /* end convolution */
 
     FILE *fp2 = fopen(argv[2], "wb");
-    fprintf(fp2, "P5\n%d %d\n%d\n", nrows, ncols, max_pixel);
+    fprintf(fp2, "P5\n%d %d\n%d\n", ncols, nrows, max_pixel);
     fwrite(blur, 1, nrows * ncols, fp2);
     fclose(fp2);
     return 0;
