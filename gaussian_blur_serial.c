@@ -34,18 +34,18 @@ int main(int argc, char *argv[])
     k = N / 2;
 
     char header[128], n1[32], n2[32];
-    FILE *fp = fopen(argv[1], "rb");
-    fgets(header, 128, fp);
+    FILE *fp1 = fopen(argv[1], "rb");
+    fgets(header, 128, fp1);
     char *eol = strchr(header, '\n');
     *eol = '\0';
 
     if (strcmp(header, "P5")) {
         fprintf(stderr, "'%s' must be in P5 format\n", argv[1]);
-        fclose(fp);
+        fclose(fp1);
         return 1;
     }
 
-    fgets(header, 128, fp);
+    fgets(header, 128, fp1);
     eol = strchr(header, '\n');
     *eol = '\0';
     char *hp = header;
@@ -58,19 +58,19 @@ int main(int argc, char *argv[])
     ncols = atoi(n1);
     nrows = atoi(n2);
 
-    fgets(header, 128, fp);
+    fgets(header, 128, fp1);
     eol = strchr(header, '\n');
     *eol = '\0';
     max_pixel = atoi(header);
     vals = malloc(nrows * ncols);
-    fread(vals, 1, nrows * ncols, fp);
-    fclose(fp);
+    fread(vals, 1, nrows * ncols, fp1);
+    fclose(fp1);
 
 
     float H[N][N];
     for (int i = 0, x = -k; i < N; ++i, ++x)
         for (int j = 0, y = -k; j < N; ++j, ++y)
-            H[i][j] = exp(-(x*x + y*y)/(2.*sigma*sigma))/(2.*PI*sigma*sigma);
+            H[i][j] = exp(-(x*x + y*y)/(2.*ss))/(2.*PI*ss);
 
     /* start convolution */
     blur = malloc(nrows * ncols);
