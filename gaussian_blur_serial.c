@@ -9,88 +9,73 @@
 
 #define PI (3.14159265358979323)
 
-void blur_kernel(float *H, uint8_t *vals, uint8_t *blur, int N, int k, int nrows, int ncols, int ii, int jj);
+#define vidx(rr, r, R) (((rr) + (r) < 0) ? 0 : (((rr) + (r) >= (R)) ? (R) - 1 : (rr) + (r)))
 
 int main(int argc, char *argv[])
 {
-    float sigma, ss, *kernel_matrix;
+    float sigma, *K, *H;
+    uint8_t *I, *J;
     int N, k, nrows, ncols, max_pixel;
-    uint8_t *vals, *blur;
+    FILE *ifp, *ofp;
 
     if (argc != 4) {
         fprintf(stderr, "Usage: ./gaussian_blur_serial <input_pgm> output_pgm> <sigma>\n");
         return 1;
     }
 
+    const char *iname = argv[1];
+    const char *oname = argv[2];
     sigma = atof(argv[3]);
-    ss = sigma * sigma;
+
     N = ceil(6*sigma);
-    if (N % 2 == 0) N++;
+    if (!(N % 2)) N++;
     k = N / 2;
 
     char header[128], n1[32], n2[32];
-    FILE *fp1 = fopen(argv[1], "rb");
-    fgets(header, 128, fp1);
-    char *eol = strchr(header, '\n');
-    *eol = '\0';
 
-    if (strcmp(header, "P5")) {
-        fprintf(stderr, "'%s' must be in P5 format\n", argv[1]);
-        fclose(fp1);
-        return 1;
-    }
+    ifp = fopen(iname, "r");
+    fscanf(ifp, "P5\n%d %d\n%d\n", &ncols, &nrows, &max_pixel);
 
-    fgets(header, 128, fp1);
-    eol = strchr(header, '\n');
-    *eol = '\0';
+    I = (uint8_t *)malloc(nrows*ncols);
+    J = (uint8_t *)malloc(nrows*ncols);
+    H = (float *)malloc(sizeof(float)*nrows*ncols);
+    K = (float *)malloc(sizeof(float)*N);
 
-    char *hp = strchr(header, ' ');
+    fread(I, 1, nrows*ncols, ifp);
+    fclose(ifp);
 
-    strcpy(n1, header);
-    strcpy(n2, hp + 1);
-
-    ncols = atoi(n1);
-    nrows = atoi(n2);
-
-    fgets(header, 128, fp1);
-    eol = strchr(header, '\n');
-    *eol = '\0';
-    max_pixel = atoi(header);
-    vals = malloc(nrows * ncols);
-    fread(vals, 1, nrows * ncols, fp1);
-    fclose(fp1);
-
-    float H[N*N];
     for (int i = 0, x = -k; i < N; ++i, ++x)
-        for (int j = 0, y = -k; j < N; ++j, ++y)
-            H[i*N + j] = exp(-(x*x + y*y)/(2.*ss))/(2.*PI*ss);
+        K[i] = exp(-(x*x)/(2.*sigma*sigma))/(sqrt(2.*PI)*sigma);
 
-    blur = malloc(nrows * ncols);
-
-    for (int ii = 0; ii < nrows; ++ii)
-        for (int jj =0; jj < ncols; ++jj)
-            blur_kernel(H, vals, blur, N, k, nrows, ncols, ii, jj);
-
-    FILE *fp2 = fopen(argv[2], "wb");
-    fprintf(fp2, "P5\n%d %d\n%d\n", ncols, nrows, max_pixel);
-    fwrite(blur, 1, nrows * ncols, fp2);
-    fclose(fp2);
-    return 0;
-}
-
-#define vidx(rr, r, R) (((rr) + (r) < 0) ? 0 : (((rr) + (r) >= (R)) ? (R) - 1 : (rr) + (r)))
-
-void blur_kernel(float *H, uint8_t *vals, uint8_t *blur, int N, int k, int nrows, int ncols, int ii, int jj)
-{
-    int xv, yv, i, j;
-    float val = 0;
-    for (i = -k; i <= k; ++i) {
-        xv = vidx(ii, i, nrows);
-        for (j = -k; j <= k; ++j) {
-            yv = vidx(jj, j, ncols);
-            val += H[(i+k)*N + (j+k)]*vals[xv*ncols + yv];
+    for (int m = 0; m < nrows; ++m) {
+        for (int n = 0; n < ncols; ++n) {
+            float val = 0;
+            for (int j = -k; j <= k; ++j) {
+                val += K[j+k]*I[m*ncols + vidx(n, j, ncols)];
+            }
+            H[m*ncols + n] = val;
         }
     }
 
-    blur[ii*ncols + jj] = val;
+    for (int m = 0; m < nrows; ++m) {
+        for (int n = 0; n < ncols; ++n) {
+            float val = 0;
+            for (int i = -k; i <= k; ++i) {
+                val += K[i+k]*H[vidx(m, i, nrows)*ncols + n];
+            }
+            J[m*ncols + n] = val;
+        }
+    }
+
+    ofp = fopen(oname, "w");
+    fprintf(ofp, "P5\n%d %d\n%d\n", ncols, nrows, max_pixel);
+    fwrite(J, 1, nrows*ncols, ofp);
+    fclose(ofp);
+
+    free(H);
+    free(I);
+    free(J);
+    free(K);
+    return 0;
 }
+
