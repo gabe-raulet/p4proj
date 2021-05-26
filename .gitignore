@@ -4,6 +4,9 @@ p4/
 *.swp
 a.out
 gaussian_blur_serial
+ref_gaussian_blur_serial
+ref_gaussian_blur_cuda
 *.dSYM
 1__cuda_code_export
 city
+test.bash
