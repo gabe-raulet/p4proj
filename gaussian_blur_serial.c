@@ -20,8 +20,6 @@ static uint8_t *vals;
 static uint8_t *blur;
 static float *kernel_matrix;
 
-float gauss(float x, float y);
-
 int main(int argc, char *argv[])
 {
     if (argc != 4) {
@@ -84,10 +82,8 @@ int main(int argc, char *argv[])
         for (int jj = 0; jj < ncols; ++jj) {
             float val = 0;
             for (int i = -k; i <= k; ++i) {
-                /* xv = (ii + i < 0) ? 0 : ((ii + i >= nrows) ? nrows - 1 : ii + i); */
                 xv = vidx(ii, i, nrows);
                 for (int j = -k; j <= k; ++j) {
-                    /* yv = (jj + j < 0) ? 0 : ((jj + j >= ncols) ? ncols - 1 : jj + j); */
                     yv = vidx(jj, j, ncols);
                     val += H[i+k][j+k]*vals[xv*ncols + yv];
                 }
@@ -95,8 +91,6 @@ int main(int argc, char *argv[])
             blur[ii*ncols + jj] = floor(val);
         }
     }
-
-    /* end convolution */
 
     FILE *fp2 = fopen(argv[2], "wb");
     fprintf(fp2, "P5\n%d %d\n%d\n", ncols, nrows, max_pixel);
