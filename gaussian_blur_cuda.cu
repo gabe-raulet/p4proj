@@ -79,13 +79,14 @@ int main(int argc, char *argv[])
     cudaMalloc((void **)&K_d, sizeof(float)*N);
 
     cudaMemcpy(I_d, I_h, nrows*ncols, cudaMemcpyHostToDevice);
-    cudaMemcpy(K_d, K_h, sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(K_d, K_h, sizeof(float)*N, cudaMemcpyHostToDevice);
 
     dim3 block(BLOCK_DIM, BLOCK_DIM);
     dim3 grid(ceil(nrows/(BLOCK_DIM + 0.0)), ceil(ncols/(BLOCK_DIM + 0.0)));
 
-    blur_kernel_cuda_pass_one<<<grid, block>>>(H_d, K_d, I_d, k_d, nrows, ncols);
-    blur_kernel_cuda_pass_two<<<grid, block>>>(H_d, K_d, J_d, k_d, nrows, ncols);
+    blur_kernel_cuda_pass_one<<<grid, block>>>(H_d, K_d, I_d, k, nrows, ncols);
+    cudaDeviceSynchronize();
+    blur_kernel_cuda_pass_two<<<grid, block>>>(H_d, K_d, J_d, k, nrows, ncols);
 
     cudaMemcpy(J_h, J_d, nrows*ncols, cudaMemcpyDeviceToHost);
 
