@@ -9,19 +9,25 @@
 
 #define PI (3.14159265358979323)
 
-static float sigma;
-static float ss;
-static int N;
-static int k;
-static int nrows;
-static int ncols;
-static int max_pixel;
-static uint8_t *vals;
-static uint8_t *blur;
-static float *kernel_matrix;
+//static float sigma;
+//static float ss;
+//static int N;
+//static int k;
+//static int nrows;
+//static int ncols;
+//static int max_pixel;
+//static uint8_t *vals;
+//static uint8_t *blur;
+//static float *kernel_matrix;
+
+void blur_kernel(float *H, uint8_t *vals, uint8_t *blur, int N, int k, int nrows, int ncols);
 
 int main(int argc, char *argv[])
 {
+    float sigma, ss, *kernel_matrix;
+    int N, k, nrows, ncols, max_pixel;
+    uint8_t *vals, *blur;
+
     if (argc != 4) {
         fprintf(stderr, "Usage: ./gaussian_blur_serial <input_pgm> output_pgm> <sigma>\n");
         return 1;
@@ -66,36 +72,39 @@ int main(int argc, char *argv[])
     fread(vals, 1, nrows * ncols, fp1);
     fclose(fp1);
 
-
-    float H[N][N];
+    float H[N*N];
     for (int i = 0, x = -k; i < N; ++i, ++x)
         for (int j = 0, y = -k; j < N; ++j, ++y)
-            H[i][j] = exp(-(x*x + y*y)/(2.*ss))/(2.*PI*ss);
+            H[i*N + j] = exp(-(x*x + y*y)/(2.*ss))/(2.*PI*ss);
 
-    /* start convolution */
     blur = malloc(nrows * ncols);
-
-    #define vidx(rr, r, R) (((rr) + (r) < 0) ? 0 : (((rr) + (r) >= (R)) ? (R) - 1 : (rr) + (r)))
-
-    int xv, yv;
-    for (int ii = 0; ii < nrows; ++ii) {
-        for (int jj = 0; jj < ncols; ++jj) {
-            float val = 0;
-            for (int i = -k; i <= k; ++i) {
-                xv = vidx(ii, i, nrows);
-                for (int j = -k; j <= k; ++j) {
-                    yv = vidx(jj, j, ncols);
-                    val += H[i+k][j+k]*vals[xv*ncols + yv];
-                }
-            }
-            blur[ii*ncols + jj] = floor(val);
-        }
-    }
+    blur_kernel(H, vals, blur, N, k, nrows, ncols);
 
     FILE *fp2 = fopen(argv[2], "wb");
     fprintf(fp2, "P5\n%d %d\n%d\n", ncols, nrows, max_pixel);
     fwrite(blur, 1, nrows * ncols, fp2);
     fclose(fp2);
     return 0;
+}
+
+#define vidx(rr, r, R) (((rr) + (r) < 0) ? 0 : (((rr) + (r) >= (R)) ? (R) - 1 : (rr) + (r)))
+
+void blur_kernel(float *H, uint8_t *vals, uint8_t *blur, int N, int k, int nrows, int ncols)
+{
+    int xv, yv, ii, jj, i, j;
+    float val;
+    for (ii = 0; ii < nrows; ++ii) {
+        for (jj = 0; jj < ncols; ++jj) {
+            val = 0;
+            for (i = -k; i <= k; ++i) {
+                xv = vidx(ii, i, nrows);
+                for (j = -k; j <= k; ++j) {
+                    yv = vidx(jj, j, ncols);
+                    val += H[(i+k)*N + (j+k)]*vals[xv*ncols + yv];
+                }
+            }
+            blur[ii*ncols + jj] = val;
+        }
+    }
 }
 
