@@ -17,12 +17,14 @@ __global__ void blur_kernel_cuda_pass_one(float *H, float *K, uint8_t *I, int k,
 {
     int m = blockIdx.x * blockDim.x + threadIdx.x;
     int n = blockIdx.y * blockDim.y + threadIdx.y;
-
     if (m >= nrows || n >= ncols) return;
 
-    float val = 0;
-    for (int j = -k; j <= k; ++j)
-        val += K[j+k]*I[m*ncols + vidx(n, j, ncols)];
+    float val = K[0]*I[m*ncols + vidx(n, 0, ncols)];
+
+    for (int j = 1; j <= k; ++j) {
+        val += K[j]*I[m*ncols + vidx(n, j, ncols)];
+        val += K[j]*I[m*ncols + vidx(n, -j, ncols)];
+    }
 
     H[m*ncols + n] = val;
 }
@@ -31,12 +33,14 @@ __global__ void blur_kernel_cuda_pass_two(float *H, float *K, uint8_t *J, int k,
 {
     int m = blockIdx.x * blockDim.x + threadIdx.x;
     int n = blockIdx.y * blockDim.y + threadIdx.y;
-
     if (m >= nrows || n >= ncols) return;
 
-    float val = 0;
-    for (int i = -k; i <= k; ++i)
-        val += K[i+k]*H[vidx(m, i, nrows)*ncols + n];
+    float val = K[0]*H[vidx(m, 0, nrows)*ncols + n];
+
+    for (int i = 1; i <= k; ++i) {
+        val += K[i]*H[vidx(m, i, nrows)*ncols + n];
+        val += K[i]*H[vidx(m, -i, nrows)*ncols + n];
+    }
 
     J[m*ncols + n] = val;
 }
@@ -69,21 +73,22 @@ int main(int argc, char *argv[])
     I_h = (uint8_t *)malloc(nrows*ncols);
     J_h = (uint8_t *)malloc(nrows*ncols);
     H_h = (float *)malloc(sizeof(float)*nrows*ncols);
-    K_h = (float *)malloc(sizeof(float)*N);
+    K_h = (float *)malloc(sizeof(float)*(k+1));
 
     fread(I_h, 1, nrows*ncols, ifp);
     fclose(ifp);
 
-    for (int i = 0, x = -k; i < N; ++i, ++x)
-        K_h[i] = exp(-(x*x)/(2.*sigma*sigma))/(sqrt(2.*PI)*sigma);
+    for (int i = 0; i <= k; ++i)
+        K_h[i] = exp(-(i*i)/(2.*sigma*sigma))/(sqrt(2.*PI)*sigma);
 
     cudaMalloc((void **)&I_d, nrows*ncols);
     cudaMalloc((void **)&J_d, nrows*ncols);
     cudaMalloc((void **)&H_d, sizeof(float)*nrows*ncols);
-    cudaMalloc((void **)&K_d, sizeof(float)*N);
+    cudaMalloc((void **)&K_d, sizeof(float)*(k+1));
 
     cudaMemcpy(I_d, I_h, nrows*ncols, cudaMemcpyHostToDevice);
-    cudaMemcpy(K_d, K_h, sizeof(float)*N, cudaMemcpyHostToDevice);
+    cudaMemcpy(K_d, K_h, sizeof(float)*(k+1), cudaMemcpyHostToDevice);
+
 
     dim3 block(BLOCK_DIM, BLOCK_DIM);
     dim3 grid(ceil(nrows/(BLOCK_DIM + 0.0)), ceil(ncols/(BLOCK_DIM + 0.0)));
