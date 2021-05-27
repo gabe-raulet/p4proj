@@ -18,6 +18,8 @@ __global__ void blur_kernel_cuda_pass_one(float *H, float *K, uint8_t *I, int k,
     int m = blockIdx.x * blockDim.x + threadIdx.x;
     int n = blockIdx.y * blockDim.y + threadIdx.y;
 
+    if (m >= nrows || n >= ncols) return;
+
     float val = 0;
     for (int j = -k; j <= k; ++j)
         val += K[j+k]*I[m*ncols + vidx(n, j, ncols)];
@@ -29,6 +31,8 @@ __global__ void blur_kernel_cuda_pass_two(float *H, float *K, uint8_t *J, int k,
 {
     int m = blockIdx.x * blockDim.x + threadIdx.x;
     int n = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (m >= nrows || n >= ncols) return;
 
     float val = 0;
     for (int i = -k; i <= k; ++i)
