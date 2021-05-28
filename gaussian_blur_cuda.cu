@@ -67,17 +67,16 @@ int main(int argc, char *argv[])
     if (!(N % 2)) N++;
     k = N / 2;
 
-    char header[128], n1[32], n2[32];
-
     ifp = fopen(iname, "r");
-    fscanf(ifp, "P5\n%d %d\n%d\n", &ncols, &nrows, &max_pixel);
+    int nread = fscanf(ifp, "P5\n%d %d\n%d\n", &ncols, &nrows, &max_pixel);
 
     I_h = (uint8_t *)malloc(nrows*ncols);
     J_h = (uint8_t *)malloc(nrows*ncols);
     H_h = (float *)malloc(sizeof(float)*nrows*ncols);
     K_h = (float *)malloc(sizeof(float)*N);
 
-    fread(I_h, 1, nrows*ncols, ifp);
+    nread = fread(I_h, 1, nrows*ncols, ifp);
+    (void)nread;
     fclose(ifp);
 
     for (int i = -k; i <= k; ++i)

@@ -31,17 +31,16 @@ int main(int argc, char *argv[])
     if (!(N % 2)) N++;
     k = N / 2;
 
-    char header[128], n1[32], n2[32];
-
     ifp = fopen(iname, "r");
-    fscanf(ifp, "P5\n%d %d\n%d\n", &ncols, &nrows, &max_pixel);
+    int nread = fscanf(ifp, "P5\n%d %d\n%d\n", &ncols, &nrows, &max_pixel);
 
     I = (uint8_t *)malloc(nrows*ncols);
     J = (uint8_t *)malloc(nrows*ncols);
     H = (float *)malloc(sizeof(float)*nrows*ncols);
     K = (float *)malloc(sizeof(float)*N);
 
-    fread(I, 1, nrows*ncols, ifp);
+    nread = fread(I, 1, nrows*ncols, ifp);
+    (void)nread;
     fclose(ifp);
 
     for (int i = 0, x = -k; i < N; ++i, ++x)
