@@ -9,7 +9,7 @@
 #include <cuda.h>
 
 #define PI (3.14159265358979323)
-#define BLOCK_DIM (32)
+#define BLOCK_DIM (16)
 
 #define vidx(rr, r, R) (((rr) + (r) < 0) ? 0 : (((rr) + (r) >= (R)) ? (R) - 1 : (rr) + (r)))
 
